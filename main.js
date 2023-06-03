@@ -118,6 +118,8 @@ class CubeManager {
         this.history = [];
         [this.cubes, this.seed] = this.generateCubes(seed);
         this.initPositions();
+        this.fixPositions();
+        this.initPositions();
         this.scoreBoard = new ScoreBoard(this.seed);
     }
 
@@ -126,6 +128,40 @@ class CubeManager {
             [32, 32, 16, 8, 8, 8, 4, 4, 4, 4, 2, 2, 2, 2].map(value => new Cube(0, 0, 0, value, group))
         ));
         return shuffle(cubes, seed);
+    }
+
+    fixPositions() {
+
+        function swapCubes(cubes) {
+            const swappedCubes = [...cubes];
+            const cubeMap = new Map();
+            const cubeSums = new Map();
+            for (const [index, cube] of swappedCubes.entries()) {
+                const key = `${cube.coordinates[1]}, ${cube.coordinates[2]}, ${cube.color}`;
+                const indices = cubeMap.get(key) || [];
+                let sums = cubeSums.get(key) || 0;
+                indices.push(index);
+                sums += cube.value;
+                cubeMap.set(key, indices);
+                cubeSums.set(key, sums);
+            }
+            // if the sum is more than 32, sort the column.
+            for (const [key, value] of cubeSums.entries()) {
+                if (value > 32) {
+                    const indices = cubeMap.get(key);
+                    const cubesToSort = indices.map(index => swappedCubes[index]);
+                    cubesToSort.sort((a, b) => b.value - a.value);
+                    for (const [index, cube] of cubesToSort.entries()) {
+                        swappedCubes[indices[index]] = cube;
+                    }
+                }
+            }
+
+
+            return swappedCubes;
+        }
+
+        this.cubes = swapCubes(this.cubes);
     }
 
     initPositions() {
